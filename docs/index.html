@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QbD-DOE Process Development Suite</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="max-w-4xl mx-auto p-8">
+        <div class="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-2xl p-10 mb-8 text-center">
+            <h1 class="text-4xl font-bold mb-4">QbD-DOE Process Development</h1>
+            <p class="text-xl text-blue-100">Quality by Design — Design of Experiments for Pharmaceutical R&D</p>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm p-8 mb-6">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">🚀 Demo Project: Suzuki Coupling</h2>
+            <p class="text-gray-600 mb-4">Pre-loaded with full CCD design, statistical analysis, and Word report generation.</p>
+            <div class="grid grid-cols-3 gap-4 mb-6">
+                <div class="bg-blue-50 rounded-lg p-4 text-center">
+                    <div class="text-3xl font-bold text-blue-600">32</div>
+                    <div class="text-sm text-gray-500">CCD Runs</div>
+                </div>
+                <div class="bg-green-50 rounded-lg p-4 text-center">
+                    <div class="text-3xl font-bold text-green-600">5</div>
+                    <div class="text-sm text-gray-500">CPPs</div>
+                </div>
+                <div class="bg-purple-50 rounded-lg p-4 text-center">
+                    <div class="text-3xl font-bold text-purple-600">3</div>
+                    <div class="text-sm text-gray-500">CQAs</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm p-8 mb-6">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">📊 Features Implemented</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-2">
+                    <div class="flex items-center gap-2"><span class="text-green-500">✓</span> CCD Design Generation</div>
+                    <div class="flex items-center gap-2"><span class="text-green-500">✓</span> OLS Regression (Full Quadratic)</div>
+                    <div class="flex items-center gap-2"><span class="text-green-500">✓</span> ANOVA Type I & III SS</div>
+                    <div class="flex items-center gap-2"><span class="text-green-500">✓</span> Residual Diagnostics</div>
+                </div>
+                <div class="space-y-2">
+                    <div class="flex items-center gap-2"><span class="text-green-500">✓</span> Derringer-Suich Desirability</div>
+                    <div class="flex items-center gap-2"><span class="text-green-500">✓</span> Monte Carlo Simulation</div>
+                    <div class="flex items-center gap-2"><span class="text-green-500">✓</span> Plotly Visualizations</div>
+                    <div class="flex items-center gap-2"><span class="text-green-500">✓</span> Word Report Generation</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm p-8 mb-6">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">🧪 Quick Start</h2>
+            <pre class="bg-gray-900 text-gray-100 rounded-lg p-4 overflow-x-auto text-sm">
+git clone https://github.com/Gajanan8055/qbd-doe.git
+cd qbd-doe
+cp .env.example .env
+# Add ANTHROPIC_API_KEY to .env
+docker-compose up
+# Open http://localhost:5173
+            </pre>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm p-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">📁 Repository</h2>
+            <a href="https://github.com/Gajanan8055/qbd-doe" class="text-blue-600 hover:underline text-lg">
+                github.com/Gajanan8055/qbd-doe
+            </a>
+            <p class="text-gray-500 mt-2">Full source code with tests, documentation, and extension guides.</p>
+        </div>
+
+        <footer class="text-center text-gray-400 mt-8 text-sm">
+            <p>Built for pharmaceutical process development teams</p>
+            <p class="mt-1">Statistical validation: Montgomery 9th ed., Derringer & Suich 1980</p>
+        </footer>
+    </div>
+</body>
+</html>
