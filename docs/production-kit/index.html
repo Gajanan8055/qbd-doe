@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Production Kit — Systems-Focus Workflow</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel2:#1f2430; --line:#2a3140;
+    --txt:#e7ebf2; --muted:#9aa6b8; --accent:#4f8cff; --accent2:#7c5cff;
+    --ok:#34d399; --warn:#fbbf24; --bad:#f87171;
+    --t1:#34d399; --t2:#60a5fa; --t3:#fbbf24; --t4:#f87171;
+    --radius:12px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+       background:var(--bg);color:var(--txt);line-height:1.5}
+  a{color:var(--accent)}
+  header{position:sticky;top:0;z-index:30;background:linear-gradient(90deg,#10131a,#141925);
+         border-bottom:1px solid var(--line);padding:14px 22px;display:flex;align-items:center;gap:14px}
+  header h1{font-size:17px;margin:0;font-weight:700;letter-spacing:.2px}
+  header .tag{font-size:11px;color:var(--muted);border:1px solid var(--line);padding:2px 8px;border-radius:20px}
+  .wrap{display:grid;grid-template-columns:300px 1fr;min-height:calc(100vh - 51px)}
+  aside{background:var(--panel);border-right:1px solid var(--line);padding:16px;overflow:auto}
+  main{padding:26px 34px;max-width:1000px}
+  .btn{background:var(--accent);color:#fff;border:none;padding:9px 14px;border-radius:8px;
+       font-size:13px;font-weight:600;cursor:pointer}
+  .btn:hover{filter:brightness(1.08)}
+  .btn.sec{background:var(--panel2);border:1px solid var(--line);color:var(--txt)}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--muted)}
+  .btn.sm{padding:5px 9px;font-size:12px}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .vid{padding:10px 12px;border-radius:9px;cursor:pointer;border:1px solid transparent;margin-bottom:6px}
+  .vid:hover{background:var(--panel2)}
+  .vid.active{background:var(--panel2);border-color:var(--accent)}
+  .vid .t{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .vid .s{font-size:11px;color:var(--muted);margin-top:3px}
+  .pill{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;
+        text-transform:uppercase;letter-spacing:.4px}
+  .pill.research{background:#3b2f12;color:var(--warn)}
+  .pill.scripting{background:#13294a;color:var(--accent)}
+  .pill.ready{background:#0f3a2c;color:var(--ok)}
+  .pill.locked{background:#2a3140;color:var(--muted)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+        padding:22px;margin-bottom:22px}
+  .card.locked{opacity:.55;pointer-events:none;position:relative}
+  .card h2{margin:0 0 4px;font-size:18px}
+  .card .sub{color:var(--muted);font-size:13px;margin-bottom:16px}
+  .lockbar{display:flex;align-items:center;gap:8px;background:#241a1a;border:1px solid #553;
+           color:var(--warn);padding:10px 14px;border-radius:9px;font-size:13px;margin-bottom:14px}
+  label.f{display:block;font-size:12px;color:var(--muted);margin:14px 0 5px;font-weight:600;
+          text-transform:uppercase;letter-spacing:.3px}
+  input[type=text],textarea,select{width:100%;background:var(--bg);border:1px solid var(--line);
+    color:var(--txt);padding:9px 11px;border-radius:8px;font-size:14px;font-family:inherit}
+  textarea{resize:vertical;min-height:60px}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent)}
+  table{width:100%;border-collapse:collapse;margin-top:8px}
+  th,td{text-align:left;padding:8px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:top}
+  th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.3px}
+  .tier-sel{font-weight:700}
+  .check{display:flex;align-items:flex-start;gap:10px;padding:8px 0;font-size:14px}
+  .check input{margin-top:3px;width:17px;height:17px;accent-color:var(--accent)}
+  .rubric td:first-child{font-weight:700}
+  .badge{font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px}
+  .badge.T1{background:rgba(52,211,153,.15);color:var(--t1)}
+  .badge.T2{background:rgba(96,165,250,.15);color:var(--t2)}
+  .badge.T3{background:rgba(251,191,36,.15);color:var(--t3)}
+  .badge.T4{background:rgba(248,113,113,.15);color:var(--t4)}
+  .row{display:flex;gap:14px;flex-wrap:wrap}
+  .row>div{flex:1;min-width:200px}
+  .progress{height:7px;background:var(--bg);border-radius:20px;overflow:hidden;margin:6px 0 2px}
+  .progress>i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));
+             transition:width .3s}
+  .empty{color:var(--muted);text-align:center;padding:60px 20px}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+  .gatebox{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:14px 16px;margin-top:14px}
+  .err{color:var(--bad);font-size:12px;margin-top:4px}
+  details.ref{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:0 16px;margin-bottom:22px}
+  details.ref summary{cursor:pointer;padding:14px 0;font-weight:600;font-size:14px}
+  .listrow{display:flex;gap:8px;margin-bottom:8px}
+  .listrow input{flex:1}
+  .x{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:7px;
+     cursor:pointer;padding:0 10px;font-size:16px}
+  .x:hover{color:var(--bad);border-color:var(--bad)}
+  .note{font-size:12px;color:var(--muted);font-style:italic;margin-top:6px}
+  .stat{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin-right:16px}
+  .dot{width:9px;height:9px;border-radius:50%}
+</style>
+</head>
+<body>
+<header>
+  <h1>🎬 Production Kit</h1>
+  <span class="tag">Systems-Focus Channel · per-video workflow</span>
+  <span style="flex:1"></span>
+  <button class="btn sec sm" onclick="exportMd()">⬇ Export .md</button>
+  <button class="btn sm" onclick="newVideo()">+ New Video</button>
+</header>
+
+<div class="wrap">
+  <aside>
+    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">Videos</div>
+    <div id="videoList"></div>
+  </aside>
+  <main id="main"></main>
+</div>
+
+<script>
+/* ============================================================
+   Production Kit — faithful implementation of Production_Kit.md
+   Storage: localStorage (one doc per video). No backend needed.
+   Safety model: Part 1 gates Part 2 & Part 3.
+   ============================================================ */
+
+const PILLARS = {
+  1:"Money", 2:"Hypocrisy gap", 3:"Economics of faith", 4:"Why nothing happens"
+};
+const TIERS = {
+  T1:"Court judgment / order, affidavit, filed chargesheet",
+  T2:"Official institutional report (CAG, parliamentary, ECI, gazette, RTI)",
+  T3:"Two independent mainstream outlets, same fact",
+  T4:"Single outlet / blog / social / 'people say'"
+};
+const LEGAL_CHECKS = [
+  "No living person accused of wrongdoing above T1",
+  'Every "is/was corrupt/guilty" claim is T1, with attribution',
+  "All allegations worded as allegations",
+  "Religion angle is commercial/legal only, not doctrinal",
+  "Denials included where they exist",
+  "Every claim in the ledger has a saved copy of its source (screenshot/PDF), not just a link"
+];
+const GATE_CHECKS = [
+  "Every on-screen claim traces to a row in the Part 1 ledger",
+  "Legal self-check (Part 1) fully ticked",
+  "Source copies saved and archived for this video",
+  "AI/synthetic-content disclosure tag set (per YouTube altered-media rules)",
+  "No face/voice deepfake of any real person",
+  "Human edit pass done — script is not raw LLM output (monetization 'original insight')",
+  'Thumbnail/title describe a mechanism, not a person'
+];
+
+const KEY="productionKit.videos.v1";
+let videos = load();
+let currentId = videos[0]?.id || null;
+
+function load(){
+  try{ return JSON.parse(localStorage.getItem(KEY)) || []; }catch(e){ return []; }
+}
+function save(){ localStorage.setItem(KEY, JSON.stringify(videos)); }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+
+function blankVideo(){
+  return {
+    id:uid(), createdAt:Date.now(),
+    // Part 1
+    title:"", pillar:"", mechanism:"", dateCompleted:"",
+    claims:[ blankClaim() ],
+    docs:[""], denials:[""],
+    legal:LEGAL_CHECKS.map(()=>false),
+    // Part 2
+    coldArtifact:"", promise:"",
+    step1:"", step1doc:"", step2:"", step2doc:"", step3:"", step3doc:"",
+    illustrative:"", patternGeneral:"", otherPlaces:"", close:"",
+    // Part 3
+    gate:GATE_CHECKS.map(()=>false)
+  };
+}
+function blankClaim(){ return { claim:"", tier:"", source:"", wording:"" }; }
+
+function current(){ return videos.find(v=>v.id===currentId); }
+
+/* ---------- Gating logic (the safety model) ---------- */
+function part1Issues(v){
+  const issues=[];
+  if(!v.title.trim()) issues.push("Working title is empty.");
+  const filled = v.claims.filter(c=>c.claim.trim());
+  if(filled.length===0) issues.push("Claims ledger has no claims.");
+  filled.forEach((c,i)=>{
+    if(!c.tier) issues.push(`Claim ${i+1}: no source tier assigned.`);
+    if(c.tier==="T4") issues.push(`Claim ${i+1} is T4 — T4 is not usable as a claim and cannot enter the script.`);
+    if(!c.source.trim()) issues.push(`Claim ${i+1}: missing source citation.`);
+    if(!c.wording) issues.push(`Claim ${i+1}: wording (fact vs allegation) not set.`);
+  });
+  const ticked = v.legal.filter(Boolean).length;
+  if(ticked<v.legal.length) issues.push(`Legal self-check incomplete (${ticked}/${v.legal.length}).`);
+  return issues;
+}
+function part1Complete(v){ return part1Issues(v).length===0; }
+
+function gateIssues(v){
+  const issues=[];
+  if(!part1Complete(v)) issues.push("Part 1 (Research/Defence File) is not complete.");
+  const ticked=v.gate.filter(Boolean).length;
+  if(ticked<v.gate.length) issues.push(`Pre-publish gate incomplete (${ticked}/${v.gate.length}).`);
+  return issues;
+}
+function statusOf(v){
+  if(gateIssues(v).length===0) return "ready";
+  if(part1Complete(v)) return "scripting";
+  return "research";
+}
+function statusLabel(s){ return {research:"Research",scripting:"Scripting",ready:"Ready"}[s]; }
+
+/* ---------- Mutators ---------- */
+function set(field,val){ const v=current(); v[field]=val; save(); renderMain(); renderList(); }
+function setNoRender(field,val){ const v=current(); v[field]=val; save(); renderList(); }
+
+function newVideo(){ const v=blankVideo(); videos.unshift(v); currentId=v.id; save(); renderAll(); }
+function selectVideo(id){ currentId=id; renderAll(); }
+function deleteVideo(id){
+  const v=videos.find(x=>x.id===id);
+  if(!confirm(`Delete "${v.title||'Untitled'}"? This cannot be undone.`)) return;
+  videos=videos.filter(x=>x.id!==id);
+  if(currentId===id) currentId=videos[0]?.id||null;
+  save(); renderAll();
+}
+
+/* ---------- Render: sidebar ---------- */
+function renderList(){
+  const el=document.getElementById('videoList');
+  if(videos.length===0){ el.innerHTML='<div class="empty" style="padding:30px 10px;font-size:13px">No videos yet.<br>Click “+ New Video”.</div>'; return; }
+  el.innerHTML = videos.map(v=>{
+    const s=statusOf(v);
+    return `<div class="vid ${v.id===currentId?'active':''}" onclick="selectVideo('${v.id}')">
+      <div class="t">${esc(v.title)||'<span style="color:var(--muted)">Untitled video</span>'}</div>
+      <div class="s"><span class="pill ${s}">${statusLabel(s)}</span>
+        ${v.pillar?` · ${PILLARS[v.pillar]}`:''}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ---------- Render: main ---------- */
+function renderMain(){
+  const el=document.getElementById('main');
+  const v=current();
+  if(!v){ el.innerHTML=`<div class="empty"><h2>No video selected</h2>
+      <p>Create a video to start its Production Kit.</p>
+      <button class="btn" onclick="newVideo()">+ New Video</button></div>`; return; }
+
+  const p1ok=part1Complete(v);
+  const issues=part1Issues(v);
+  const filledClaims=v.claims.filter(c=>c.claim.trim()).length;
+  const legalTicked=v.legal.filter(Boolean).length;
+  const gateTicked=v.gate.filter(Boolean).length;
+  const p1pct = pct([
+    !!v.title.trim(), filledClaims>0,
+    v.claims.filter(c=>c.claim.trim()).every(c=>c.tier&&c.tier!=="T4"&&c.source.trim()&&c.wording),
+    legalTicked===v.legal.length
+  ]);
+
+  el.innerHTML = `
+  <div class="toolbar">
+    <span class="stat"><span class="dot" style="background:var(--${p1ok?'ok':'warn'})"></span>Part 1 ${p1pct}%</span>
+    <span class="stat">Claims: ${filledClaims}</span>
+    <span class="stat">Legal: ${legalTicked}/${v.legal.length}</span>
+    <span class="stat">Gate: ${gateTicked}/${v.gate.length}</span>
+    <span style="flex:1"></span>
+    <button class="btn ghost sm" onclick="deleteVideo('${v.id}')">🗑 Delete</button>
+  </div>
+
+  ${refBlock()}
+
+  <!-- PART 1 -->
+  <div class="card">
+    <h2>Part 1 — Research / Defence File</h2>
+    <div class="sub">Fill this BEFORE scripting. This is the only node that can't be automated — and the one that keeps you out of court and qualifies you for monetization.</div>
+    <div class="progress"><i style="width:${p1pct}%"></i></div>
+
+    <div class="row">
+      <div><label class="f">Video working title</label>
+        <input type="text" value="${attr(v.title)}" oninput="setNoRender('title',this.value)" onblur="renderMain()" placeholder="e.g. How procurement money vanishes"></div>
+      <div><label class="f">Pillar</label>
+        <select onchange="set('pillar',this.value)">
+          <option value="">— choose —</option>
+          ${Object.entries(PILLARS).map(([k,l])=>`<option value="${k}" ${v.pillar==k?'selected':''}>${k} · ${l}</option>`).join('')}
+        </select></div>
+      <div><label class="f">Date file completed</label>
+        <input type="text" value="${attr(v.dateCompleted)}" oninput="setNoRender('dateCompleted',this.value)" placeholder="YYYY-MM-DD"></div>
+    </div>
+    <label class="f">Core mechanism this video explains (one sentence)</label>
+    <textarea oninput="setNoRender('mechanism',this.value)" placeholder="The single machine this video reveals…">${esc(v.mechanism)}</textarea>
+
+    <label class="f">Claims ledger — every factual statement that will appear</label>
+    <table>
+      <thead><tr><th>#</th><th style="width:38%">Claim (as it will be said)</th><th>Tier</th><th style="width:28%">Source (citation + ref)</th><th>Wording</th><th></th></tr></thead>
+      <tbody>
+        ${v.claims.map((c,i)=>claimRow(c,i)).join('')}
+      </tbody>
+    </table>
+    <button class="btn sec sm" style="margin-top:10px" onclick="addClaim()">+ Add claim</button>
+    ${v.claims.some(c=>c.tier==='T4'&&c.claim.trim())?`<div class="err">⚠ A T4 claim is present. Per the rubric, T4 may only be used to <em>find</em> a T1–T3 source — it can never enter the script. Resolve it to unlock Parts 2 & 3.</div>`:''}
+
+    <label class="f">On-screen documents to show (report page, judgment para, affidavit line)</label>
+    ${listEditor('docs',v.docs,'e.g. CAG Report 2019, p.42 — para on tender split')}
+
+    <label class="f">Subject responses / denials on record</label>
+    ${listEditor('denials',v.denials,'e.g. Spokesperson statement, 12 Mar 2020 — denies wrongdoing')}
+
+    <label class="f">Legal self-check (tick all before proceeding)</label>
+    <div class="gatebox">
+      ${LEGAL_CHECKS.map((c,i)=>`<label class="check"><input type="checkbox" ${v.legal[i]?'checked':''} onchange="toggleArr('legal',${i})"><span>${c}</span></label>`).join('')}
+    </div>
+    <div class="note">Keep the saved source copies forever. Links rot; your defence file must not.</div>
+  </div>
+
+  <!-- PART 2 -->
+  <div class="card ${p1ok?'':'locked'}">
+    ${p1ok?'':lockBar('Complete Part 1 to unlock the script.')}
+    <h2>Part 2 — Script Template</h2>
+    <div class="sub">Generated FROM Part 1. Structure: Number → Mechanism → "See it everywhere." Open cold on one document or figure — never on a thesis.</div>
+
+    <h3 style="font-size:14px;color:var(--accent)">ACT 1 — Cold open (0:00–0:30)</h3>
+    <label class="f">Concrete artifact to open on (from Part 1 on-screen docs)</label>
+    <textarea oninput="setNoRender('coldArtifact',this.value)" placeholder="One specific number or one line from a document.">${esc(v.coldArtifact)}</textarea>
+    <label class="f">The promise (what the viewer understands by the end)</label>
+    <textarea oninput="setNoRender('promise',this.value)">${esc(v.promise)}</textarea>
+
+    <h3 style="font-size:14px;color:var(--accent)">ACT 2 — The mechanism (the body)</h3>
+    ${stepField('step1','step1doc','Step 1 of mechanism','on-screen doc',v)}
+    ${stepField('step2','step2doc','Step 2','doc',v)}
+    ${stepField('step3','step3doc','Step 3','doc',v)}
+    <label class="f">The illustrative case (T1 only) and exactly which step it proves</label>
+    <textarea oninput="setNoRender('illustrative',this.value)" placeholder="The adjudicated case is the illustration, not the subject.">${esc(v.illustrative)}</textarea>
+
+    <h3 style="font-size:14px;color:var(--accent)">ACT 3 — "Now you'll see it everywhere"</h3>
+    <label class="f">The pattern stated generally</label>
+    <textarea oninput="setNoRender('patternGeneral',this.value)">${esc(v.patternGeneral)}</textarea>
+    <label class="f">1–2 other places the same mechanism shows up (each still T1–T3)</label>
+    <textarea oninput="setNoRender('otherPlaces',this.value)">${esc(v.otherPlaces)}</textarea>
+    <label class="f">Close (a call to notice, not to outrage)</label>
+    <textarea oninput="setNoRender('close',this.value)">${esc(v.close)}</textarea>
+  </div>
+
+  <!-- PART 3 -->
+  <div class="card ${p1ok?'':'locked'}">
+    ${p1ok?'':lockBar('Complete Part 1 to unlock the pre-publish gate.')}
+    <h2>Part 3 — Pre-Publish Gate</h2>
+    <div class="sub">Do not upload until all are true.</div>
+    <div class="gatebox">
+      ${GATE_CHECKS.map((c,i)=>`<label class="check"><input type="checkbox" ${v.gate[i]?'checked':''} onchange="toggleArr('gate',${i})"><span>${c}</span></label>`).join('')}
+    </div>
+    ${publishBlock(v)}
+  </div>
+  `;
+}
+
+function claimRow(c,i){
+  const t=c.tier;
+  return `<tr>
+    <td>${i+1}</td>
+    <td><textarea style="min-height:42px" oninput="setClaim(${i},'claim',this.value)" onblur="renderMain()">${esc(c.claim)}</textarea></td>
+    <td><select class="tier-sel" onchange="setClaim(${i},'tier',this.value);renderMain()" style="color:var(--${t?t.toLowerCase():'muted'})">
+        <option value="">—</option>
+        ${Object.keys(TIERS).map(k=>`<option value="${k}" ${t===k?'selected':''}>${k}</option>`).join('')}
+      </select>
+      ${t?`<div class="badge ${t}" style="margin-top:4px">${t}</div>`:''}</td>
+    <td><textarea style="min-height:42px" oninput="setClaim(${i},'source',this.value)" placeholder="full citation + link/doc ref">${esc(c.source)}</textarea></td>
+    <td><select onchange="setClaim(${i},'wording',this.value)">
+        <option value="">—</option>
+        <option value="fact" ${c.wording==='fact'?'selected':''}>Fact</option>
+        <option value="allegation" ${c.wording==='allegation'?'selected':''}>Allegation</option>
+      </select></td>
+    <td><button class="x" onclick="removeClaim(${i})">×</button></td>
+  </tr>`;
+}
+function stepField(s,d,lbl,dlbl,v){
+  return `<div class="row">
+    <div style="flex:2"><label class="f">${lbl}</label>
+      <textarea oninput="setNoRender('${s}',this.value)">${esc(v[s])}</textarea></div>
+    <div><label class="f">${dlbl}</label>
+      <input type="text" value="${attr(v[d])}" oninput="setNoRender('${d}',this.value)"></div>
+  </div>`;
+}
+function listEditor(field,arr,ph){
+  return `<div>${arr.map((item,i)=>`<div class="listrow">
+      <input type="text" value="${attr(item)}" oninput="setListItem('${field}',${i},this.value)" placeholder="${ph}">
+      <button class="x" onclick="removeListItem('${field}',${i})">×</button>
+    </div>`).join('')}
+    <button class="btn sec sm" onclick="addListItem('${field}')">+ Add</button></div>`;
+}
+function publishBlock(v){
+  const issues=gateIssues(v);
+  if(issues.length===0){
+    return `<div class="gatebox" style="border-color:var(--ok);background:#0f2a20;margin-top:16px">
+      <strong style="color:var(--ok)">✅ Cleared for upload.</strong>
+      <div class="note" style="color:#bfe8d6">All gates satisfied and Part 1 complete. Export the doc as your defence file.</div>
+      <button class="btn sm" style="margin-top:10px;background:var(--ok)" onclick="exportMd()">⬇ Export defence file (.md)</button>
+    </div>`;
+  }
+  return `<div class="gatebox" style="border-color:var(--warn);margin-top:16px">
+    <strong style="color:var(--warn)">🔒 Not cleared to upload</strong>
+    <ul style="margin:8px 0 0;padding-left:18px;font-size:13px;color:var(--muted)">
+      ${issues.map(i=>`<li>${esc(i)}</li>`).join('')}
+    </ul></div>`;
+}
+function lockBar(msg){ return `<div class="lockbar">🔒 ${msg}</div>`; }
+
+function refBlock(){
+  return `<details class="ref">
+    <summary>Part 0 — Source-Tier Rubric &nbsp;<span style="color:var(--muted);font-weight:400">(reference, never changes)</span></summary>
+    <table class="rubric"><thead><tr><th>Tier</th><th>Source type</th><th>Use rule</th></tr></thead><tbody>
+      <tr><td><span class="badge T1">T1</span></td><td>Court judgment/order, affidavit, filed chargesheet</td><td>Strongest. State as fact <em>with attribution</em>.</td></tr>
+      <tr><td><span class="badge T2">T2</span></td><td>Official report — CAG, parliamentary, ECI, gazette, RTI</td><td>Strong. "the CAG report found…"</td></tr>
+      <tr><td><span class="badge T3">T3</span></td><td>Two independent mainstream outlets, same fact</td><td>Usable. "as reported by…". Never a single outlet.</td></tr>
+      <tr><td><span class="badge T4">T4</span></td><td>Single outlet, blog, social, "people say"</td><td><strong>Not usable as a claim.</strong> Only to <em>find</em> a T1–T3 source.</td></tr>
+    </tbody></table>
+    <div style="padding:0 0 16px;font-size:13px;color:var(--muted)">
+      <strong style="color:var(--txt)">Hard gates:</strong> wrongdoing stated as fact only at T1; include the subject's denial; religion content stays commercial/legal, never doctrinal (keeps you clear of BNS 299); if a claim can't reach T1–T3 it does not enter the script.
+    </div>
+  </details>`;
+}
+
+/* ---------- Claim / list helpers ---------- */
+function setClaim(i,f,val){ const v=current(); v.claims[i][f]=val; save(); renderList(); }
+function addClaim(){ const v=current(); v.claims.push(blankClaim()); save(); renderMain(); }
+function removeClaim(i){ const v=current(); v.claims.splice(i,1); if(v.claims.length===0)v.claims.push(blankClaim()); save(); renderMain(); }
+function setListItem(f,i,val){ const v=current(); v[f][i]=val; save(); }
+function addListItem(f){ const v=current(); v[f].push(""); save(); renderMain(); }
+function removeListItem(f,i){ const v=current(); v[f].splice(i,1); if(v[f].length===0)v[f].push(""); save(); renderMain(); }
+function toggleArr(f,i){ const v=current(); v[f][i]=!v[f][i]; save(); renderMain(); renderList(); }
+
+/* ---------- Export to Markdown (matches Production_Kit.md shape) ---------- */
+function exportMd(){
+  const v=current(); if(!v){ alert("No video selected."); return; }
+  const yn=b=>b?"[x]":"[ ]";
+  let md=`# Production Kit — ${v.title||'Untitled video'}\n\n`;
+  md+=`## PART 1 — Research / Defence File\n\n`;
+  md+=`- **Working title:** ${v.title}\n- **Pillar:** ${v.pillar?v.pillar+' '+PILLARS[v.pillar]:''}\n`;
+  md+=`- **Core mechanism:** ${v.mechanism}\n- **Date completed:** ${v.dateCompleted}\n\n`;
+  md+=`### Claims ledger\n\n| # | Claim | Tier | Source | Wording |\n|---|-------|------|--------|---------|\n`;
+  v.claims.forEach((c,i)=>{ md+=`| ${i+1} | ${cell(c.claim)} | ${c.tier} | ${cell(c.source)} | ${c.wording} |\n`; });
+  md+=`\n### On-screen documents\n`+v.docs.filter(x=>x.trim()).map(x=>`- ${x}`).join('\n')+`\n`;
+  md+=`\n### Subject responses / denials\n`+v.denials.filter(x=>x.trim()).map(x=>`- ${x}`).join('\n')+`\n`;
+  md+=`\n### Legal self-check\n`+LEGAL_CHECKS.map((c,i)=>`- ${yn(v.legal[i])} ${c}`).join('\n')+`\n`;
+  md+=`\n## PART 2 — Script\n\n`;
+  md+=`### ACT 1 — Cold open\n- Artifact: ${v.coldArtifact}\n- Promise: ${v.promise}\n\n`;
+  md+=`### ACT 2 — Mechanism\n- Step 1: ${v.step1} (doc: ${v.step1doc})\n- Step 2: ${v.step2} (doc: ${v.step2doc})\n- Step 3: ${v.step3} (doc: ${v.step3doc})\n- Illustrative case (T1): ${v.illustrative}\n\n`;
+  md+=`### ACT 3 — See it everywhere\n- Pattern: ${v.patternGeneral}\n- Other places: ${v.otherPlaces}\n- Close: ${v.close}\n\n`;
+  md+=`## PART 3 — Pre-Publish Gate\n`+GATE_CHECKS.map((c,i)=>`- ${yn(v.gate[i])} ${c}`).join('\n')+`\n`;
+  md+=`\n---\n_Status: ${statusLabel(statusOf(v))}. Exported ${new Date().toISOString()}._\n`;
+
+  const blob=new Blob([md],{type:'text/markdown'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=(v.title||'production-kit').replace(/[^a-z0-9]+/gi,'-').toLowerCase()+'.md';
+  a.click();
+}
+
+/* ---------- utils ---------- */
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function attr(s){ return (s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+function cell(s){ return (s||'').replace(/\n/g,' ').replace(/\|/g,'\\|'); }
+function pct(arr){ const t=arr.filter(Boolean).length; return Math.round(t/arr.length*100); }
+
+function renderAll(){ renderList(); renderMain(); }
+renderAll();
+</script>
+</body>
+</html>
