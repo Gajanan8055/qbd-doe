@@ -85,6 +85,29 @@
   .note{font-size:12px;color:var(--muted);font-style:italic;margin-top:6px}
   .stat{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin-right:16px}
   .dot{width:9px;height:9px;border-radius:50%}
+  /* Autopilot overlay */
+  .overlay{position:fixed;inset:0;z-index:50;background:rgba(8,10,14,.75);display:none;
+           overflow:auto;padding:40px 20px}
+  .overlay.open{display:block}
+  .modal{max-width:860px;margin:0 auto;background:var(--panel);border:1px solid var(--line);
+         border-radius:14px;padding:26px 30px}
+  .modal h2{margin:0 0 2px;font-size:22px}
+  .modal .close{float:right;background:transparent;border:1px solid var(--line);color:var(--muted);
+                border-radius:8px;cursor:pointer;padding:6px 11px;font-size:16px}
+  .step{border:1px solid var(--line);border-radius:11px;padding:16px 18px;margin-top:16px}
+  .step.disabled{opacity:.45;pointer-events:none}
+  .step h3{margin:0 0 10px;font-size:15px;display:flex;align-items:center;gap:8px}
+  .step .num{background:var(--accent);color:#fff;width:24px;height:24px;border-radius:50%;
+             display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+  .step.ok .num{background:var(--ok)}
+  .out{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px;
+       margin-top:10px;font-size:13px;max-height:300px;overflow:auto}
+  .bar{height:9px;background:var(--bg);border-radius:20px;overflow:hidden;margin-top:10px}
+  .bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .3s}
+  .spin{display:inline-block;width:13px;height:13px;border:2px solid var(--line);
+        border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  video{width:100%;border-radius:9px;margin-top:10px;background:#000}
 </style>
 </head>
 <body>
@@ -93,6 +116,7 @@
   <span class="tag">Systems-Focus Channel · per-video workflow</span>
   <span style="flex:1"></span>
   <button class="btn sec sm" onclick="exportMd()">⬇ Export .md</button>
+  <button class="btn sm" style="background:var(--accent2)" onclick="openAuto()">🤖 Autopilot</button>
   <button class="btn sm" onclick="newVideo()">+ New Video</button>
 </header>
 
@@ -104,7 +128,65 @@
   <main id="main"></main>
 </div>
 
+<!-- ── Autopilot overlay ───────────────────────────────────────────── -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <button class="close" onclick="closeAuto()">✕</button>
+    <h2>🤖 Autopilot</h2>
+    <div class="sub" style="color:var(--muted);font-size:13px">Topic → research → script → video → YouTube. A human review gate sits between every step — Part 1's judgment is never automated away.</div>
+
+    <label class="f">Pipeline backend URL</label>
+    <div class="listrow">
+      <input type="text" id="apiUrl" placeholder="http://localhost:8001">
+      <button class="btn sec sm" onclick="checkApi()">Check</button>
+    </div>
+    <div id="apiStatus" class="note"></div>
+
+    <!-- Step 1 -->
+    <div class="step" id="s1">
+      <h3><span class="num">1</span> Research → Defence file</h3>
+      <div class="row">
+        <div style="flex:3"><label class="f">Topic idea</label>
+          <input type="text" id="apTopic" placeholder="e.g. how temple trust land deals avoid scrutiny"></div>
+        <div><label class="f">Pillar (optional)</label>
+          <select id="apPillar"><option value="">auto</option>
+            <option value="1">1 · Money</option><option value="2">2 · Hypocrisy gap</option>
+            <option value="3">3 · Economics of faith</option><option value="4">4 · Why nothing happens</option>
+          </select></div>
+      </div>
+      <button class="btn sm" style="margin-top:12px" id="b1" onclick="runResearch()">Run research</button>
+      <div id="o1"></div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="step disabled" id="s2">
+      <h3><span class="num">2</span> Script + title</h3>
+      <button class="btn sm" id="b2" onclick="runScript()">Generate script</button>
+      <div id="o2"></div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="step disabled" id="s3">
+      <h3><span class="num">3</span> Create video</h3>
+      <button class="btn sm" id="b3" onclick="runVideo()">Render video</button>
+      <div id="o3"></div>
+    </div>
+
+    <!-- Step 4 -->
+    <div class="step disabled" id="s4">
+      <h3><span class="num">4</span> Upload to YouTube</h3>
+      <div id="o4"></div>
+    </div>
+  </div>
+</div>
+
 <script>
+/* ============================================================
+   Production Kit — faithful implementation of Production_Kit.md
+   Storage: localStorage (one doc per video). No backend needed.
+   Safety model: Part 1 gates Part 2 & Part 3.
+   ============================================================ */
+
 const PILLARS = {
   1:"Money", 2:"Hypocrisy gap", 3:"Economics of faith", 4:"Why nothing happens"
 };
@@ -145,13 +227,16 @@ function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(
 function blankVideo(){
   return {
     id:uid(), createdAt:Date.now(),
+    // Part 1
     title:"", pillar:"", mechanism:"", dateCompleted:"",
     claims:[ blankClaim() ],
     docs:[""], denials:[""],
     legal:LEGAL_CHECKS.map(()=>false),
+    // Part 2
     coldArtifact:"", promise:"",
     step1:"", step1doc:"", step2:"", step2doc:"", step3:"", step3doc:"",
     illustrative:"", patternGeneral:"", otherPlaces:"", close:"",
+    // Part 3
     gate:GATE_CHECKS.map(()=>false)
   };
 }
@@ -159,6 +244,7 @@ function blankClaim(){ return { claim:"", tier:"", source:"", wording:"" }; }
 
 function current(){ return videos.find(v=>v.id===currentId); }
 
+/* ---------- Gating logic (the safety model) ---------- */
 function part1Issues(v){
   const issues=[];
   if(!v.title.trim()) issues.push("Working title is empty.");
@@ -190,6 +276,7 @@ function statusOf(v){
 }
 function statusLabel(s){ return {research:"Research",scripting:"Scripting",ready:"Ready"}[s]; }
 
+/* ---------- Mutators ---------- */
 function set(field,val){ const v=current(); v[field]=val; save(); renderMain(); renderList(); }
 function setNoRender(field,val){ const v=current(); v[field]=val; save(); renderList(); }
 
@@ -203,9 +290,10 @@ function deleteVideo(id){
   save(); renderAll();
 }
 
+/* ---------- Render: sidebar ---------- */
 function renderList(){
   const el=document.getElementById('videoList');
-  if(videos.length===0){ el.innerHTML='<div class="empty" style="padding:30px 10px;font-size:13px">No videos yet.<br>Click "+ New Video".</div>'; return; }
+  if(videos.length===0){ el.innerHTML='<div class="empty" style="padding:30px 10px;font-size:13px">No videos yet.<br>Click “+ New Video”.</div>'; return; }
   el.innerHTML = videos.map(v=>{
     const s=statusOf(v);
     return `<div class="vid ${v.id===currentId?'active':''}" onclick="selectVideo('${v.id}')">
@@ -216,6 +304,7 @@ function renderList(){
   }).join('');
 }
 
+/* ---------- Render: main ---------- */
 function renderMain(){
   const el=document.getElementById('main');
   const v=current();
@@ -224,6 +313,7 @@ function renderMain(){
       <button class="btn" onclick="newVideo()">+ New Video</button></div>`; return; }
 
   const p1ok=part1Complete(v);
+  const issues=part1Issues(v);
   const filledClaims=v.claims.filter(c=>c.claim.trim()).length;
   const legalTicked=v.legal.filter(Boolean).length;
   const gateTicked=v.gate.filter(Boolean).length;
@@ -245,6 +335,7 @@ function renderMain(){
 
   ${refBlock()}
 
+  <!-- PART 1 -->
   <div class="card">
     <h2>Part 1 — Research / Defence File</h2>
     <div class="sub">Fill this BEFORE scripting. This is the only node that can't be automated — and the one that keeps you out of court and qualifies you for monetization.</div>
@@ -287,6 +378,7 @@ function renderMain(){
     <div class="note">Keep the saved source copies forever. Links rot; your defence file must not.</div>
   </div>
 
+  <!-- PART 2 -->
   <div class="card ${p1ok?'':'locked'}">
     ${p1ok?'':lockBar('Complete Part 1 to unlock the script.')}
     <h2>Part 2 — Script Template</h2>
@@ -314,6 +406,7 @@ function renderMain(){
     <textarea oninput="setNoRender('close',this.value)">${esc(v.close)}</textarea>
   </div>
 
+  <!-- PART 3 -->
   <div class="card ${p1ok?'':'locked'}">
     ${p1ok?'':lockBar('Complete Part 1 to unlock the pre-publish gate.')}
     <h2>Part 3 — Pre-Publish Gate</h2>
@@ -392,6 +485,7 @@ function refBlock(){
   </details>`;
 }
 
+/* ---------- Claim / list helpers ---------- */
 function setClaim(i,f,val){ const v=current(); v.claims[i][f]=val; save(); renderList(); }
 function addClaim(){ const v=current(); v.claims.push(blankClaim()); save(); renderMain(); }
 function removeClaim(i){ const v=current(); v.claims.splice(i,1); if(v.claims.length===0)v.claims.push(blankClaim()); save(); renderMain(); }
@@ -400,6 +494,7 @@ function addListItem(f){ const v=current(); v[f].push(""); save(); renderMain();
 function removeListItem(f,i){ const v=current(); v[f].splice(i,1); if(v[f].length===0)v[f].push(""); save(); renderMain(); }
 function toggleArr(f,i){ const v=current(); v[f][i]=!v[f][i]; save(); renderMain(); renderList(); }
 
+/* ---------- Export to Markdown (matches Production_Kit.md shape) ---------- */
 function exportMd(){
   const v=current(); if(!v){ alert("No video selected."); return; }
   const yn=b=>b?"[x]":"[ ]";
@@ -409,14 +504,14 @@ function exportMd(){
   md+=`- **Core mechanism:** ${v.mechanism}\n- **Date completed:** ${v.dateCompleted}\n\n`;
   md+=`### Claims ledger\n\n| # | Claim | Tier | Source | Wording |\n|---|-------|------|--------|---------|\n`;
   v.claims.forEach((c,i)=>{ md+=`| ${i+1} | ${cell(c.claim)} | ${c.tier} | ${cell(c.source)} | ${c.wording} |\n`; });
-  md+=`\n### On-screen documents\n`+v.docs.filter(x=>x.trim()).map(x=>`- ${x}`).join('\n')+'\n';
-  md+=`\n### Subject responses / denials\n`+v.denials.filter(x=>x.trim()).map(x=>`- ${x}`).join('\n')+'\n';
-  md+=`\n### Legal self-check\n`+LEGAL_CHECKS.map((c,i)=>`- ${yn(v.legal[i])} ${c}`).join('\n')+'\n';
+  md+=`\n### On-screen documents\n`+v.docs.filter(x=>x.trim()).map(x=>`- ${x}`).join('\n')+`\n`;
+  md+=`\n### Subject responses / denials\n`+v.denials.filter(x=>x.trim()).map(x=>`- ${x}`).join('\n')+`\n`;
+  md+=`\n### Legal self-check\n`+LEGAL_CHECKS.map((c,i)=>`- ${yn(v.legal[i])} ${c}`).join('\n')+`\n`;
   md+=`\n## PART 2 — Script\n\n`;
   md+=`### ACT 1 — Cold open\n- Artifact: ${v.coldArtifact}\n- Promise: ${v.promise}\n\n`;
   md+=`### ACT 2 — Mechanism\n- Step 1: ${v.step1} (doc: ${v.step1doc})\n- Step 2: ${v.step2} (doc: ${v.step2doc})\n- Step 3: ${v.step3} (doc: ${v.step3doc})\n- Illustrative case (T1): ${v.illustrative}\n\n`;
   md+=`### ACT 3 — See it everywhere\n- Pattern: ${v.patternGeneral}\n- Other places: ${v.otherPlaces}\n- Close: ${v.close}\n\n`;
-  md+=`## PART 3 — Pre-Publish Gate\n`+GATE_CHECKS.map((c,i)=>`- ${yn(v.gate[i])} ${c}`).join('\n')+'\n';
+  md+=`## PART 3 — Pre-Publish Gate\n`+GATE_CHECKS.map((c,i)=>`- ${yn(v.gate[i])} ${c}`).join('\n')+`\n`;
   md+=`\n---\n_Status: ${statusLabel(statusOf(v))}. Exported ${new Date().toISOString()}._\n`;
 
   const blob=new Blob([md],{type:'text/markdown'});
@@ -426,12 +521,154 @@ function exportMd(){
   a.click();
 }
 
+/* ---------- utils ---------- */
 function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function attr(s){ return (s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 function cell(s){ return (s||'').replace(/\n/g,' ').replace(/\|/g,'\\|'); }
 function pct(arr){ const t=arr.filter(Boolean).length; return Math.round(t/arr.length*100); }
 
 function renderAll(){ renderList(); renderMain(); }
+
+/* ===================== Autopilot ===================== */
+const AP = { research:null, script:null, task:null, videoUrl:null };
+const APKEY="productionKit.apiUrl";
+
+function apiBase(){
+  let u=document.getElementById('apiUrl').value.trim()||'http://localhost:8001';
+  localStorage.setItem(APKEY,u); return u.replace(/\/+$/,'');
+}
+function openAuto(){
+  document.getElementById('apiUrl').value=localStorage.getItem(APKEY)||'http://localhost:8001';
+  document.getElementById('overlay').classList.add('open');
+  checkApi();
+}
+function closeAuto(){ document.getElementById('overlay').classList.remove('open'); }
+
+async function api(path,opts){
+  const r=await fetch(apiBase()+path,Object.assign({headers:{'Content-Type':'application/json'}},opts||{}));
+  if(!r.ok){ let m=r.statusText; try{m=(await r.json()).detail||m;}catch(e){} throw new Error(m); }
+  return r.json();
+}
+async function checkApi(){
+  const el=document.getElementById('apiStatus');
+  el.innerHTML='<span class="spin"></span> checking…';
+  try{
+    const h=await api('/api/health');
+    el.innerHTML=`✅ connected · model <b>${esc(h.model)}</b> · web-search ${h.web_search?'on':'off'} · YouTube ${h.youtube_authorized?'authorized':'not authorized'}`;
+    el.style.color='var(--ok)';
+  }catch(e){
+    el.style.color='var(--bad)';
+    el.innerHTML=`❌ cannot reach backend (${esc(e.message)}). Start the pipeline server (see pipeline/README.md), then Check again.`;
+  }
+}
+function enableStep(id){ document.getElementById(id).classList.remove('disabled'); }
+function markOk(id){ document.getElementById(id).classList.add('ok'); }
+
+async function runResearch(){
+  const b=document.getElementById('b1'), o=document.getElementById('o1');
+  const topic=document.getElementById('apTopic').value.trim();
+  if(!topic){ o.innerHTML='<div class="err">Enter a topic.</div>'; return; }
+  b.disabled=true; o.innerHTML='<div class="out"><span class="spin"></span> Researching & sourcing (this can take ~30–60s)…</div>';
+  try{
+    const res=await api('/api/research',{method:'POST',body:JSON.stringify({topic,pillar:document.getElementById('apPillar').value||null})});
+    AP.research=res.research;
+    o.innerHTML=ledgerHtml(res.research,res.issues,res.ready);
+    if(res.ready){ markOk('s1'); enableStep('s2'); }
+  }catch(e){ o.innerHTML=`<div class="err">${esc(e.message)}</div>`; }
+  b.disabled=false;
+}
+function ledgerHtml(r,issues,ready){
+  const rows=r.claims.map((c,i)=>`<tr><td>${i+1}</td><td>${esc(c.claim)}</td>
+    <td><span class="badge ${c.tier}">${c.tier}</span></td><td>${esc(c.source)}</td><td>${c.wording}</td></tr>`).join('');
+  const iss=issues.length?`<div class="err">⚠ ${issues.map(esc).join('<br>')}</div>`:'<div class="note" style="color:var(--ok)">✅ Part 1 clean — gate passed.</div>';
+  return `<div class="out">
+    <b>${esc(r.title)}</b> · pillar ${esc(r.pillar)}<br>
+    <span style="color:var(--muted)">${esc(r.mechanism)}</span>
+    <table style="margin-top:8px"><thead><tr><th>#</th><th>Claim</th><th>Tier</th><th>Source</th><th>Wording</th></tr></thead><tbody>${rows}</tbody></table>
+    ${iss}</div>`;
+}
+async function runScript(){
+  const b=document.getElementById('b2'), o=document.getElementById('o2');
+  b.disabled=true; o.innerHTML='<div class="out"><span class="spin"></span> Writing script & title…</div>';
+  try{
+    const s=await api('/api/script',{method:'POST',body:JSON.stringify({research:AP.research})});
+    AP.script=s;
+    o.innerHTML=`<div class="out"><b>Title:</b> ${esc(s.youtube_title)}<br><br>
+      <b>Cold open:</b> ${esc(s.cold_artifact)}<br><b>Promise:</b> ${esc(s.promise)}<br><br>
+      <b>Mechanism:</b><br>${s.steps.map((x,i)=>`${i+1}. ${esc(x.step)} <span style="color:var(--muted)">(${esc(x.doc)})</span>`).join('<br>')}<br><br>
+      <b>Pattern:</b> ${esc(s.pattern_general)}<br><b>Close:</b> ${esc(s.close)}<br><br>
+      <b>Narration:</b><br>${esc(s.narration)}</div>`;
+    markOk('s2'); enableStep('s3');
+  }catch(e){ o.innerHTML=`<div class="err">${esc(e.message)}</div>`; }
+  b.disabled=false;
+}
+async function runVideo(){
+  const b=document.getElementById('b3'), o=document.getElementById('o3');
+  b.disabled=true; o.innerHTML='<div class="out">Starting render…<div class="bar"><i id="vbar"></i></div><div id="vmsg" class="note"></div></div>';
+  try{
+    const {task_id}=await api('/api/video',{method:'POST',body:JSON.stringify({script:AP.script})});
+    AP.task=task_id;
+    await pollVideo(task_id,o);
+  }catch(e){ o.innerHTML=`<div class="err">${esc(e.message)}</div>`; b.disabled=false; }
+}
+function pollVideo(id,o){
+  return new Promise(resolve=>{
+    const tick=async()=>{
+      try{
+        const t=await api('/api/video/status/'+id);
+        const bar=document.getElementById('vbar'), msg=document.getElementById('vmsg');
+        if(bar) bar.style.width=(t.progress||0)+'%';
+        if(msg) msg.textContent=(t.message||'')+' '+(t.progress||0)+'%';
+        if(t.status==='done'){
+          AP.videoUrl=apiBase()+'/api/video/file/'+id;
+          o.innerHTML=`<div class="out">✅ Video ready.<video controls src="${AP.videoUrl}"></video>
+            <a class="btn sec sm" style="margin-top:8px;display:inline-block" href="${AP.videoUrl}" download>⬇ Download MP4</a></div>`;
+          markOk('s3'); enableStep('s4'); renderStep4(); resolve(); return;
+        }
+        if(t.status==='error'){ o.innerHTML=`<div class="err">${esc(t.message)}</div>`; document.getElementById('b3').disabled=false; resolve(); return; }
+        setTimeout(tick,1500);
+      }catch(e){ o.innerHTML=`<div class="err">${esc(e.message)}</div>`; resolve(); }
+    };
+    tick();
+  });
+}
+function renderStep4(){
+  const o=document.getElementById('o4');
+  const checks=GATE_CHECKS.map((c,i)=>`<label class="check"><input type="checkbox" class="ap-gate"><span>${c}</span></label>`).join('');
+  o.innerHTML=`<div id="ytAuth" class="note"></div>
+    <div class="gatebox">${checks}</div>
+    <div class="note">Uploads go out <b>PRIVATE</b> and AI-disclosure-tagged. Flip to public in YouTube Studio only after every box is ticked.</div>
+    <button class="btn sm" style="margin-top:10px" onclick="ytUpload()">Upload (private)</button>
+    <div id="o4out"></div>`;
+  ytCheck();
+}
+async function ytCheck(){
+  const el=document.getElementById('ytAuth');
+  try{ const s=await api('/api/youtube/status');
+    el.innerHTML=s.authorized?'✅ YouTube authorized.':'<button class="btn sec sm" onclick="ytAuthorize()">Authorize YouTube (opens browser on the server machine)</button>';
+  }catch(e){ el.innerHTML=`<span class="err">${esc(e.message)}</span>`; }
+}
+async function ytAuthorize(){
+  const el=document.getElementById('ytAuth'); el.innerHTML='<span class="spin"></span> waiting for consent…';
+  try{ await api('/api/youtube/authorize',{method:'POST'}); ytCheck(); }
+  catch(e){ el.innerHTML=`<span class="err">${esc(e.message)}</span>`; }
+}
+async function ytUpload(){
+  const o=document.getElementById('o4out');
+  const all=[...document.querySelectorAll('.ap-gate')];
+  if(!all.every(c=>c.checked)){ o.innerHTML='<div class="err">Tick every pre-publish gate box first.</div>'; return; }
+  o.innerHTML='<div class="out"><span class="spin"></span> uploading…</div>';
+  try{
+    const path=AP.videoUrl.split('/api/video/file/').pop(); // task id; server resolves to file
+    const t=await api('/api/video/status/'+path);
+    const res=await api('/api/youtube/upload',{method:'POST',body:JSON.stringify({
+      video_path:t.video_path, title:AP.script.youtube_title, description:AP.script.description,
+      tags:AP.script.tags, privacy:'private', confirm_gate:true })});
+    o.innerHTML=`<div class="out" style="color:var(--ok)">✅ Uploaded (private): <a href="${res.url}" target="_blank">${res.url}</a></div>`;
+    markOk('s4');
+  }catch(e){ o.innerHTML=`<div class="err">${esc(e.message)}</div>`; }
+}
+
 renderAll();
 </script>
 </body>

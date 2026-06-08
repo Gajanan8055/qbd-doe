@@ -12,6 +12,19 @@ services:
       - backend_data:/app/data
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
+  pipeline:
+    build: ./pipeline
+    ports:
+      - "8001:8001"
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - PIPELINE_MODEL=${PIPELINE_MODEL:-claude-opus-4-8}
+      - PIPELINE_CORS=*
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./pipeline:/app
+      - pipeline_output:/app/output
+
   frontend:
     build: ./frontend
     ports:
@@ -25,3 +38,4 @@ services:
 
 volumes:
   backend_data:
+  pipeline_output:
