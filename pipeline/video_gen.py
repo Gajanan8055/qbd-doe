@@ -1,13 +1,15 @@
 """Stage 3 of the pipeline: Script -> narrated MP4.
 
-Builds dark-themed 1920x1080 slides (Pillow), narrates each with gTTS, and
-assembles them into a single MP4 with MoviePy/ffmpeg. Each slide is shown for
-exactly as long as its narration segment, so audio and visuals stay in sync.
+Builds dark-themed 1920x1080 slides (Pillow), narrates each segment with
+text-to-speech, and assembles them into a single MP4 with MoviePy/ffmpeg.
+Each slide is shown for exactly as long as its narration segment.
+
+TTS priority: edge-tts (highest quality, online) → gTTS (online) → pyttsx3 (offline fallback).
 """
 from __future__ import annotations
 
+import asyncio
 import os
-import textwrap
 from pathlib import Path
 from typing import Callable, List, Tuple
 
@@ -21,8 +23,7 @@ try:
 except Exception:  # pragma: no cover
     pass
 
-from gtts import gTTS  # noqa: E402
-from moviepy.editor import (  # noqa: E402
+from moviepy import (  # noqa: E402
     AudioFileClip,
     ImageClip,
     concatenate_videoclips,
@@ -36,7 +37,40 @@ FG = (231, 235, 242)
 MUTED = (154, 166, 184)
 ACCENT = (79, 140, 255)
 
+EDGE_TTS_VOICE = os.getenv("TTS_VOICE", "en-US-JennyNeural")
+
 ProgressFn = Callable[[int, str], None]
+
+
+def _tts(text: str, out_path: str) -> None:
+    """Generate speech audio using the best available TTS engine."""
+    # 1. edge-tts: high-quality neural voice, free, online
+    try:
+        import edge_tts
+
+        async def _run():
+            c = edge_tts.Communicate(text, voice=EDGE_TTS_VOICE)
+            await c.save(out_path)
+
+        asyncio.run(_run())
+        return
+    except Exception:
+        pass
+
+    # 2. gTTS: Google Translate TTS, free, online
+    try:
+        from gtts import gTTS
+        gTTS(text=text, lang="en").save(out_path)
+        return
+    except Exception:
+        pass
+
+    # 3. pyttsx3: fully offline, works without any network access
+    import pyttsx3
+    engine = pyttsx3.init()
+    engine.setProperty("rate", 165)
+    engine.save_to_file(text, out_path)
+    engine.runAndWait()
 
 
 def _font(size: int) -> ImageFont.FreeTypeFont:
@@ -126,11 +160,11 @@ def build_video(s: ScriptResult, out_dir: Path, progress: ProgressFn | None = No
         _slide(img_path, kicker, body, footer)
 
         audio_path = work / f"audio_{i:02d}.mp3"
-        gTTS(text=speak or body, lang="en").save(str(audio_path))
+        _tts(speak or body, str(audio_path))
         narration = AudioFileClip(str(audio_path))
         dur = narration.duration + 0.6  # small tail of silence
 
-        clip = ImageClip(str(img_path)).set_duration(dur).set_audio(narration)
+        clip = ImageClip(str(img_path)).with_duration(dur).with_audio(narration)
         clips.append(clip)
 
     report(85, "Stitching video")

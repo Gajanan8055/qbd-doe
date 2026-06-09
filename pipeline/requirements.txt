@@ -1,19 +1,21 @@
 # Production Kit Pipeline — Python backend dependencies
-fastapi==0.115.6
-uvicorn[standard]==0.34.0
-pydantic==2.10.4
-python-dotenv==1.0.1
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+pydantic>=2.10.0
+python-dotenv>=1.0.0
 
 # LLM (research + script + title)
 anthropic>=0.69.0
 
 # Video creation
-Pillow==11.1.0
-gTTS==2.5.4
-moviepy==1.0.3
-imageio-ffmpeg==0.5.1
+Pillow>=11.0.0
+edge-tts>=7.0.0
+gTTS>=2.5.0
+pyttsx3>=2.90
+moviepy>=2.0.0
+imageio-ffmpeg>=0.5.0
 
 # YouTube upload
-google-api-python-client==2.157.0
-google-auth-oauthlib==1.2.1
-google-auth-httplib2==0.2.0
+google-api-python-client>=2.100.0
+google-auth-oauthlib>=1.2.0
+google-auth-httplib2>=0.2.0
